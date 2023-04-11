@@ -13,4 +13,4 @@ All code and data in this repository are freely available for use by anyone for 
 
 Kramer, S.J., D.A. Siegel, S. Maritorena, D. Catlett (2022). Modeling surface ocean phytoplankton pigments from hyperspectral remote sensing reflectance on global scales. Remote Sensing of Environment, 270, 1-14, https://doi.org/10.1016/j.rse.2021.112879. 
 
-Please notify me if you find errors and/or inaccuracies or if you have any questions.
+Please notify me if you find errors and/or inaccuracies or if you have any questions. Dylan Catlett's repositories may also be helpful: https://github.com/dcat4/bioOptix_and_PFTs and https://github.com/dcat4/SDP_programs.
