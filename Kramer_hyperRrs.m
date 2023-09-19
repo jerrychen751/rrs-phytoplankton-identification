@@ -59,12 +59,12 @@ bbp_s = 2.0*(1.-1.2*exp(-0.9*rrs443/rrs555));
 bbp = (443./wave).^bbp_s;
 
 %Put IOPs together
-IOPs = gsm_invert(Rrs,asw,bsw,bbp,aphstar,acdm);
+IOPs = gsm_invert(Rrs,asw,bbsw,bbp,aphstar,acdm);
 %outputs = chl, acdm443, bbp443
 
 %Reconstruct Rrs
 a = asw + IOPs(:,1)*aphstar + IOPs(:,2)*acdm;
-bb = bsw + IOPs(:,3)*bbp;
+bb = bbsw + IOPs(:,3)*bbp;
 rrsP = bb./(a+bb);
 
 g = [0.0949 0.0794]; %coefficients from Gordon et al. (1988)
