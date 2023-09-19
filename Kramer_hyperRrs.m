@@ -13,13 +13,6 @@
 
 %Make sure all functions are in your path / directory!
 
-%The model uses reflectance = f(IOPs) from Gordon et al. (1988) which uses
-%below the surface reflectance (rrs = Lu(0-)/Ed(0-)). If you are using 
-%above surface reflectance (Rrs = Lu(0+)/Ed(0+)), you will need to convert
-%your reflectances before running this model, using the equation below from
-%Lee et al. (2002):
-%rrs = Rrs/(0.52 + 1.7*Rrs);
-
 %Map the directory where you will load your data:
 cd /Users/skramer/Documents/UCSB/Research/Data/HPLC_Aph_Rrs
 
@@ -27,6 +20,13 @@ cd /Users/skramer/Documents/UCSB/Research/Data/HPLC_Aph_Rrs
 load Smoothed_Rrs.mat %Rrs
 load chlorophyll.mat %chl
 load temp_sal.mat %T, S
+
+%The model uses reflectance = f(IOPs) from Gordon et al. (1988) which uses
+%below the surface reflectance (rrs = Lu(0-)/Ed(0-)). If you are using 
+%above surface reflectance (Rrs = Lu(0+)/Ed(0+)), you will need to convert
+%your reflectances before running this model, using the equation below from
+%Lee et al. (2002):
+rrs = Rrs/(0.52 + 1.7*Rrs);
 
 %Define wavelengths
 wave = 400:1:700;
@@ -55,11 +55,11 @@ acdm = exp(-acdm_s*(wave-443));
 bbsw = 0.5*bsw;
 
 %bbp slope is a function of rrs (just below surface):
-bbp_s = 2.0*(1.-1.2*exp(-0.9*rrs443/rrs555));
+bbp_s = 2.0*(1.-1.2*exp(-0.9*rrs443/rrs555)); %You will need to define rrs443 and rrs555 based on your rrs data
 bbp = (443./wave).^bbp_s;
 
 %Put IOPs together
-IOPs = gsm_invert(Rrs,asw,bbsw,bbp,aphstar,acdm);
+IOPs = gsm_invert(rrs,asw,bbsw,bbp,aphstar,acdm);
 %outputs = chl, acdm443, bbp443
 
 %Reconstruct Rrs
@@ -68,7 +68,7 @@ bb = bbsw + IOPs(:,3)*bbp;
 rrsP = bb./(a+bb);
 
 g = [0.0949 0.0794]; %coefficients from Gordon et al. (1988)
-modRrs = (g(1) + g(2)*rrsP).*rrsP;
+modrrs = (g(1) + g(2)*rrsP).*rrsP;
 
 %Residual between measured and modeled (to use for Kramer_hyperRrs.m)
-rrsD = Rrs-modRrs;
+rrsD = rrs-modrrs;
