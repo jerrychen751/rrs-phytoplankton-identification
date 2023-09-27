@@ -44,7 +44,7 @@ aphstar = aph./chl;
 
 %acdm slope is a function of Rrs (just above surface):
 acdm_s = -(0.01447 + 0.00033*Rrs490/Rrs555);
-acdm = exp(-acdm_s*(wave-443));
+acdm = exp(acdm_s*(wave-443));
 
 %%Then, define backscattering as a sum of seawater backscattering (bbsw) and
 %backscattering by particles (bbp)
