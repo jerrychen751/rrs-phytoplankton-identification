@@ -38,8 +38,7 @@ wave = 400:1:700;
 asw = asw(50:end);
 
 %aph = import A & B coefficients from aph_A_B_Coeffs_Sasha_RSE_paper.txt
-aph = A.*chl.^B; %inversion model will solve for chl as an output
-%aphstar = aph./chl;
+%aph = A.*chl.^B; %inversion model will solve for chl as an output
 
 %acdm slope is a function of Rrs (just above surface):
 acdm_s = -(0.01447 + 0.00033*Rrs490/Rrs555);
@@ -58,7 +57,7 @@ bbp_s = 2.0*(1.-1.2*exp(-0.9*rrs440rrs555)); %You will need to define rrs440 and
 bbp = (443./wave).^bbp_s;
 
 %Put IOPs together
-IOPs = gsm_invert(rrs,asw,bbsw,bbp,aph,acdm);
+IOPs = gsm_invert(rrs,asw,bbsw,bbp,A,B,acdm);
 %outputs = chl, acdm443, bbp443
 
 %Reconstruct Rrs
