@@ -53,7 +53,7 @@ acdm = exp(acdm_s*(wave-443));
 bbsw = 0.5*bsw;
 
 %bbp slope is a function of rrs (just below surface):
-bbp_s = 2.0*(1.-1.2*exp(-0.9*rrs440rrs555)); %You will need to define rrs440 and rrs555 based on your rrs data
+bbp_s = 2.0*(1.-1.2*exp(-0.9*rrs440./rrs555)); %You will need to define rrs440 and rrs555 based on your rrs data
 bbp = (443./wave).^bbp_s;
 
 %Put IOPs together
