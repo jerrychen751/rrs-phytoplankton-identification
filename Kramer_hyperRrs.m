@@ -61,7 +61,7 @@ IOPs = gsm_invert(rrs,asw,bbsw,bbp,A,B,acdm);
 %outputs = chl, acdm443, bbp443
 
 %Reconstruct Rrs
-a = asw + (A.*IOPs(:,1)).^B + IOPs(:,2)*acdm;
+a = asw + A.*IOPs(:,1).^B + IOPs(:,2)*acdm;
 bb = bbsw + IOPs(:,3)*bbp;
 rrsP = bb./(a+bb);
 
