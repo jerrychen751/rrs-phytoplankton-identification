@@ -68,5 +68,8 @@ rrsP = bb./(a+bb);
 g = [0.0949 0.0794]; %coefficients from Gordon et al. (1988)
 modrrs = (g(1) + g(2)*rrsP).*rrsP;
 
+%Convert back to Rrs
+modRrs = (0.52*rrs)/((1.7*rrs)+1);
+
 %Residual between measured and modeled (to use for Kramer_hyperRrs.m)
-rrsD = rrs-modrrs;
+RrsD = Rrs-modRrs;
