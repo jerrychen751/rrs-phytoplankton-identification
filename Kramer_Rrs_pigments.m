@@ -25,18 +25,18 @@ diffD2 = diff(hgsm_diff,2,2); %2nd deriv residual
 %Set parameters that are constant for all modeling runs:
 n_permutations = 100; %the number of independent model validations to do (each formulates and validates a model)
 max_pcs = 30; %max number of spectral pc's to incorporate into the model - 30
-mdl_pick_metric = 'MAE'; %R2, RMSE, avg, med, ens, bias, MAE
+mdl_pick_metric = 'MAE'; %pick the metric by which to evaluate pigment model fit - R2, RMSE, avg, med, ens, bias, MAE
 k = 5;
 pft_index = 'pigment';
-ofn_suffix = '_rrsDD2_10nm_MAE_20210810.mat'; % the suffix of the name of the file (change)
+ofn_suffix = '_rrsD2_1nm_MAE_20210810.mat'; % the suffix of the name of the file (change for your output)
 
 %Loop through and train models for each of the pigments listed below.
-%Make sure they match the names in the "vars" variable
+%Make sure they each have a match to a name in the "vars" variable
 pigs2mdl = {'Tchla','Zea','DVchla','ButFuco','HexFuco','Allo','MVchlb','Neo','Viola','Fuco','Chlc12','Chlc3','Perid'};
 vars = {'Tchla','Tchlb','Tchlc','ABcaro','ButFuco','HexFuco','Allo','Diadino','Diato','Fuco','Perid','Zea','MVchla','DVchla','Chllide','MVchlb','DVchlb','Chlc12','Chlc3','Lut','Neo','Viola','Phytin','Phide','Pras'};
 
 %Set spectra to use in the model:
-daph = [RrsD(:,1:10:end),RrsD2(:,1:10:end)];
+daph = diffD2; %"daph" is the variable name from Dylan's code for consistency, but here we are using d2rrs
 
 %% Start modeling...
 %this script keeps track of how long it takes ("tic" and "toc")
