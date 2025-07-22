@@ -3,6 +3,7 @@
 %Edited by Sasha Kramer (2021)
 
 % Details in Kramer et al., 2022: https://doi.org/10.1016/j.rse.2021.112879
+% Please also see Dylan's GitHub: https://github.com/dcat4/bioOptix_and_PFTs
 
 % Inputs: Rrs residual derivative spectra (or any spectra),
 % corresponding observations of a pft index that you want to model (HPLC
