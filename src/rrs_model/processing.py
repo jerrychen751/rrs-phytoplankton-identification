@@ -1,128 +1,11 @@
 import numpy as np
+from scipy.optimize import minimize
 from scipy.io import savemat
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import KFold, train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score, mean_squared_error
-
-def betasw_ZHH2009(lambda_val, Tc, S, theta, delta=0.039):
-    """
-    This function is a Python translation of the MATLAB script by Xiaodong Zhang,
-    Lianbo Hu, and Ming-Xia He (2009) from their paper "Scattering by pure seawater:
-    Effect of salinity," published in Optics Express, Vol. 17, No. 7, pp. 5698-5710.
-
-    It computes the volume scattering function, scattering coefficient, and
-    backscattering coefficient of pure seawater.
-
-    Args:
-        lambda_val (np.ndarray): Wavelength in nanometers (nm).
-        Tc (float): Temperature in degrees Celsius.
-        S (float): Salinity in practical salinity units (psu).
-        theta (np.ndarray): Scattering angles in degrees.
-        delta (float, optional): Depolarization ratio. Defaults to 0.039.
-
-    Returns:
-        tuple: A tuple containing:
-            - betasw (np.ndarray): Volume scattering at the specified angles.
-            - beta90sw (np.ndarray): Volume scattering at 90 degrees.
-            - bsw (np.ndarray): Total scattering coefficient.
-    """
-    if not isinstance(Tc, (int, float)) or not isinstance(S, (int, float)):
-        raise ValueError("Temperature (Tc) and Salinity (S) must be scalar values.")
-
-    lambda_val = np.array(lambda_val, dtype=float).flatten()
-    rad = np.array(theta, dtype=float).flatten() * np.pi / 180
-
-    Na = 6.0221417930e23
-    Kbz = 1.3806503e-23
-    Tk = Tc + 273.15
-    M0 = 18e-3
-
-    nsw, dnds = _RInw(lambda_val, Tc, S)
-    IsoComp = _BetaT(Tc, S)
-    density_sw = _rhou_sw(Tc, S)
-    dlnawds = _dlnasw_ds(Tc, S)
-    DFRI = _PMH(nsw)
-
-    beta_df = (np.pi**2 / 2) * ((lambda_val * 1e-9)**(-4)) * Kbz * Tk * IsoComp * (DFRI**2) * (6 + 6 * delta) / (6 - 7 * delta)
-    flu_con = S * M0 * dnds**2 / density_sw / (-dlnawds) / Na
-    beta_cf = 2 * np.pi**2 * ((lambda_val * 1e-9)**(-4)) * nsw**2 * flu_con * (6 + 6 * delta) / (6 - 7 * delta)
-
-    beta90sw = beta_df + beta_cf
-    bsw = 8 * np.pi / 3 * beta90sw * (2 + delta) / (1 + delta)
-
-    betasw = np.outer(1 + (np.cos(rad)**2) * (1 - delta) / (1 + delta), beta90sw)
-
-    return betasw, beta90sw, bsw
-
-def _RInw(lambda_val, Tc, S):
-    """Calculates the refractive index of seawater."""
-    n_air = 1.0 + (5792105.0 / (238.0185 - 1. / (lambda_val / 1e3)**2) + 167917.0 / (57.362 - 1. / (lambda_val / 1e3)**2)) / 1e8
-
-    n0 = 1.31405
-    n1 = 1.779e-4
-    n2 = -1.05e-6
-    n3 = 1.6e-8
-    n4 = -2.02e-6
-    n5 = 15.868
-    n6 = 0.01155
-    n7 = -0.00423
-    n8 = -4382
-    n9 = 1.1455e6
-
-    nsw = n0 + (n1 + n2 * Tc + n3 * Tc**2) * S + n4 * Tc**2 + (n5 + n6 * S + n7 * Tc) / lambda_val + n8 / lambda_val**2 + n9 / lambda_val**3
-    nsw *= n_air
-    dnswds = (n1 + n2 * Tc + n3 * Tc**2 + n6 / lambda_val) * n_air
-    return nsw, dnswds
-
-def _BetaT(Tc, S):
-    """Calculates isothermal compressibility."""
-    kw = 19652.21 + 148.4206 * Tc - 2.327105 * Tc**2 + 1.360477e-2 * Tc**3 - 5.155288e-5 * Tc**4
-    a0 = 54.6746 - 0.603459 * Tc + 1.09987e-2 * Tc**2 - 6.167e-5 * Tc**3
-    b0 = 7.944e-2 + 1.6483e-2 * Tc - 5.3009e-4 * Tc**2
-    Ks = kw + a0 * S + b0 * S**1.5
-    return 1. / Ks * 1e-5
-
-def _rhou_sw(Tc, S):
-    """Calculates the density of seawater."""
-    a0 = 8.24493e-1
-    a1 = -4.0899e-3
-    a2 = 7.6438e-5
-    a3 = -8.2467e-7
-    a4 = 5.3875e-9
-    a5 = -5.72466e-3
-    a6 = 1.0227e-4
-    a7 = -1.6546e-6
-    a8 = 4.8314e-4
-    b0 = 999.842594
-    b1 = 6.793952e-2
-    b2 = -9.09529e-3
-    b3 = 1.001685e-4
-    b4 = -1.120083e-6
-    b5 = 6.536332e-9
-
-    density_w = b0 + b1 * Tc + b2 * Tc**2 + b3 * Tc**3 + b4 * Tc**4 + b5 * Tc**5
-    density_sw = density_w + ((a0 + a1 * Tc + a2 * Tc**2 + a3 * Tc**3 + a4 * Tc**4) * S +
-                              (a5 + a6 * Tc + a7 * Tc**2) * S**1.5 + a8 * S**2)
-    return density_sw
-
-def _dlnasw_ds(Tc, S):
-    """
-    Calculates the partial derivative of the natural logarithm of water activity
-    with respect to salinity.
-    """
-    dlnawds = ((-5.58651e-4 + 2.40452e-7 * Tc - 3.12165e-9 * Tc**2 + 2.40808e-11 * Tc**3) +
-               1.5 * (1.79613e-5 - 9.9422e-8 * Tc + 2.08919e-9 * Tc**2 - 1.39872e-11 * Tc**3) * S**0.5 +
-               2 * (-2.31065e-6 - 1.37674e-9 * Tc - 1.93316e-11 * Tc**2) * S)
-    return dlnawds
-
-from scipy.optimize import minimize
-
-def _PMH(n_wat):
-    """Calculates the density derivative of the refractive index."""
-    n_wat2 = n_wat**2
-    return (n_wat2 - 1) * (1 + 2/3 * (n_wat2 + 2) * (n_wat / 3 - 1 / (3 * n_wat))**2)
 
 def gsm_cost(IOPs, rrs, aw, bbw, bbpstar, A, B, admstar):
     """
@@ -184,7 +67,7 @@ def gsm_invert(rrs, aw, bbw, bbpstar, A, B, admstar):
     for i in range(rrs.shape[0]):
         rrs_obs = rrs[i, :]
 
-        bounds = [(0, None), (0, None), (0, None)] # Add bounds to ensure IOPs are non-negative
+        bounds = [(0, None), (0, None), (0, None)]
 
         result = minimize(
             gsm_cost,
@@ -236,21 +119,18 @@ def rrs_model_train(daph, pft, pft_index, n_permutations, max_pcs, k, mdl_pick_m
 
     np.random.seed(1)
 
-    # Initialize storage for results across permutations
     all_mean_betas_nonstd = np.zeros((daph.shape[1], n_permutations))
     all_mean_alphas_nonstd = np.zeros(n_permutations)
     final_r2s, final_rmses, final_maes, final_biases = [], [], [], []
     final_avg_pct_errors, final_med_pct_errors = [], []
 
     for i in range(n_permutations):
-        # Split data into training (75%) and validation (25%) sets
         daph_train, daph_val, pft_train, pft_val = train_test_split(
             daph, pft, test_size=0.25, random_state=i
         )
 
         kf = KFold(n_splits=k, shuffle=True, random_state=i)
 
-        # Store results for each fold
         fold_betas = np.zeros((daph.shape[1], k))
         fold_alphas = np.zeros(k)
 
@@ -263,18 +143,17 @@ def rrs_model_train(daph, pft, pft_index, n_permutations, max_pcs, k, mdl_pick_m
             cv_val_spec_std = scaler.transform(cv_val_spec)
 
             n_samples_fold = cv_train_spec_std.shape[0]
-            current_max_pcs = min(max_pcs, n_samples_fold -1)
+            current_max_pcs = min(max_pcs, n_samples_fold - 1)
 
             pca = PCA(n_components=current_max_pcs)
             train_pcs = pca.fit_transform(cv_train_spec_std)
 
-            # Find the best number of components for this fold
             gof_metrics = {
                 'R2': [], 'RMSE': [], 'MAE': [], 'bias': [],
                 'avg': [], 'med': [], 'ens': []
             }
 
-            for l in range(1, max_pcs + 1):
+            for l in range(1, current_max_pcs + 1):
                 model = LinearRegression()
                 model.fit(train_pcs[:, :l], cv_train_pft)
 
@@ -291,35 +170,29 @@ def rrs_model_train(daph, pft, pft_index, n_permutations, max_pcs, k, mdl_pick_m
                 gof_metrics['MAE'].append(np.mean(np.abs(pft_pred - cv_val_pft)))
                 gof_metrics['bias'].append(np.mean(pft_pred - cv_val_pft))
 
-                # Percentage errors (avoid division by zero)
                 safe_pft_val = np.where(cv_val_pft == 0, 1e-6, cv_val_pft)
                 percent_errors = np.abs((pft_pred - safe_pft_val) / safe_pft_val) * 100
                 gof_metrics['avg'].append(np.mean(percent_errors))
                 gof_metrics['med'].append(np.median(percent_errors))
                 gof_metrics['ens'].append((1 - gof_metrics['R2'][-1] + gof_metrics['RMSE'][-1]) / 100)
 
-            # Select the best number of components based on the chosen metric
             if mdl_pick_metric in ['RMSE', 'MAE', 'bias', 'avg', 'med', 'ens']:
                 best_l = np.argmin(gof_metrics[mdl_pick_metric]) + 1
-            else: # 'R2'
+            else:
                 best_l = np.argmax(gof_metrics[mdl_pick_metric]) + 1
 
-            # Retrain model with the best number of components
             final_pca = PCA(n_components=best_l)
             final_train_pcs = final_pca.fit_transform(cv_train_spec_std)
 
             final_model = LinearRegression()
             final_model.fit(final_train_pcs, cv_train_pft)
 
-            # Store coefficients and intercept for this fold
             fold_betas[:, j] = final_pca.inverse_transform(final_model.coef_)
             fold_alphas[j] = final_model.intercept_
 
-        # Average coefficients and intercepts from all folds
         mean_betas = np.mean(fold_betas, axis=1)
         mean_alphas = np.mean(fold_alphas)
 
-        # De-standardize to apply to original data
         scaler_final = StandardScaler().fit(daph_train)
         mean_betas_nonstd = mean_betas / scaler_final.scale_
         mean_alphas_nonstd = mean_alphas - np.sum(mean_betas * scaler_final.mean_ / scaler_final.scale_)
@@ -327,7 +200,6 @@ def rrs_model_train(daph, pft, pft_index, n_permutations, max_pcs, k, mdl_pick_m
         all_mean_betas_nonstd[:, i] = mean_betas_nonstd
         all_mean_alphas_nonstd[i] = mean_alphas_nonstd
 
-        # Validate on the 25% hold-out set
         pft_final_pred = daph_val @ mean_betas_nonstd + mean_alphas_nonstd
 
         if pft_index == 'pigment':
@@ -347,7 +219,6 @@ def rrs_model_train(daph, pft, pft_index, n_permutations, max_pcs, k, mdl_pick_m
 
         print(f"Permutation {i+1}/{n_permutations} complete.")
 
-    # Compile final results
     coefficients = all_mean_betas_nonstd
     intercepts = all_mean_alphas_nonstd
 
@@ -366,7 +237,6 @@ def rrs_model_train(daph, pft, pft_index, n_permutations, max_pcs, k, mdl_pick_m
         'median_pct_error': np.array(final_med_pct_errors)
     }
 
-    # Save results to a .mat file
     savemat(output_file_name, {
         'coefficients': coefficients,
         'intercepts': intercepts,
