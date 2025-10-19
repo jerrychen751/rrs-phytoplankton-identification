@@ -1,6 +1,13 @@
 import numpy as np
 from scipy.io import loadmat
-from kramer_functions import betasw_ZHH2009, gsm_invert
+import sys
+import os
+
+# Add the src directory to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+
+from rrs_model.physics import betasw_ZHH2009
+from rrs_model.processing import gsm_invert
 
 def main():
     """
